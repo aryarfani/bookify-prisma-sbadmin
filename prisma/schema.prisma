@@ -1,0 +1,115 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://root:@localhost:3306/cartago-learn"
+}
+
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String   @db.Text
+  expiresAt DateTime
+}
+
+model AccessToken {
+  id        Int    @id @default(autoincrement())
+  token     String
+  modelName String
+  modelId   Int
+}
+
+model Vendor {
+  id        Int        @id @default(autoincrement())
+  name      String
+  email     String     @unique
+  password  String
+  balance   Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  Products  Product[]
+  Followers Customer[] @relation("_Followers")
+}
+
+model Customer {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  balance   Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Carts     Cart[]
+  Following Vendor[]  @relation("_Followers")
+  Likes     Product[]
+  Orders    Order[]
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  vendor      Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendorId    Int
+  name        String
+  description String?     @db.Text
+  image       String
+  price       Int
+  stock       Int
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  Carts       Cart[]
+  Likers      Customer[]
+  OrderItems  OrderItem[]
+}
+
+model Cart {
+  id         Int      @id @default(autoincrement())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId Int
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  Int
+  quantity   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Order {
+  id             Int             @id @default(autoincrement())
+  code           String          @unique
+  status         String          @default("pending")
+  customer       Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId     Int
+  subtotal       Int
+  note           String?         @db.Text
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  OrderItems     OrderItem[]
+  MidtransDetail MidtransDetail?
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  price     Int
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MidtransDetail {
+  id          Int      @id @default(autoincrement())
+  isPaid      Boolean  @default(false)
+  order       Order    @relation(fields: [code], references: [code], onDelete: Cascade)
+  code        String   @unique
+  token       String?
+  status      String?
+  paymentUrl  String
+  paymentType String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
